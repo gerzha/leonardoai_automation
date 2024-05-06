@@ -13,7 +13,7 @@ OPTIONS = {
         '--disable-infobars',
         '--disable-notifications',
         '--disable-popup-blocking',
-        '--remote-debugging-port=9222',
+        # '--remote-debugging-port=9201',
         "--deterministic-fetch",
         "--disable-features=IsolateOrigins,site-per-process",
         "--disable-site-isolation-trials",

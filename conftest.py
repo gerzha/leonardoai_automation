@@ -26,7 +26,7 @@ def login_page(pages_manager, request):
             base_page.page.get_by_role("button", name="Delete Account").click()
             base_page.page.get_by_role("textbox").fill(name)
             base_page.page.get_by_role("button", name="Delete My Account").click()
-
+            base_page.page.get_by_role("button", name="Sign in").wait_for(state='visible', timeout=6000)
         request.addfinalizer(lambda: delete_acc(name))
         return base_page
 

@@ -1,42 +1,57 @@
 import re
+import time
 from uuid import uuid4
 
-from settings import PASSWORD, EMAIL
+import pytest
+
+from prompts import ghosts, creature, killers, blood, clouns
+from settings import PASSWORD_1, EMAIL_1, EMAIL_2, PASSWORD_2, PASSWORD_3, EMAIL_3
 
 # Constants
 TIMEOUT_IMAGE = 20000
-TIMEOUT_VIDEO = 600000
+TIMEOUT_VIDEO = 900000
 PLACEHOLDER_PROMPT = "Type a prompt ..."
 BUTTON_GENERATE = "Generate 2"
-SAVE_PATH = "/Users/dmitryger/PycharmProjects/leonardoai_automation/"
+SAVE_PATH = "/Users/dmitryger/Desktop/Leonardo/"
 
 image_1_locator = "div.css-1uhvlas > div:nth-child(2) > div.css-hoyejk > div > div.css-0 > div > div:nth-child(2) > div:nth-child(1) > div > div > div:nth-child(2)"
 image_2_locator = "div.css-1uhvlas > div:nth-child(2) > div.css-hoyejk > div > div:nth-child(3) > div > div:nth-child(2)> div:nth-child(1) > div > div > div:nth-child(2)"
 video_1_locator = "div.css-1uhvlas > div:nth-child(2) > div.css-hoyejk > div > div:nth-child(3) > div > div:nth-child(2) > div:nth-child(1) > div > div > div:nth-child(2)"
 
 
-def login_and_get_page(login_page, login_name):
+def login_and_get_page(login_page, login_name, email, password):
     leonardo_page = login_page(login_name)
     leonardo_page.page.get_by_role("button", name="Microsoft").click()
     leonardo_page.page.get_by_test_id("i0116").click()
-    leonardo_page.page.get_by_test_id("i0116").fill(PASSWORD)
+    leonardo_page.page.get_by_test_id("i0116").fill(password)
     leonardo_page.page.get_by_test_id("i0116").dblclick()
     leonardo_page.page.get_by_test_id("i0116").press("Meta+a")
-    leonardo_page.page.get_by_test_id("i0116").fill(EMAIL)
+    leonardo_page.page.get_by_test_id("i0116").fill(email)
     leonardo_page.page.get_by_role("button", name="Next").click()
-    leonardo_page.page.get_by_test_id("i0118").fill(PASSWORD)
+    leonardo_page.page.get_by_test_id("i0118").fill(password)
     leonardo_page.page.get_by_role("button", name="Sign in").click()
-    leonardo_page.page.get_by_label("Stay signed in?").click()
+    leonardo_page.page.get_by_label("Stay signed in?").click(timeout=15000)
+    time.sleep(3)
+    if leonardo_page.page.locator('[placeholder="myawesomeusername"]', ).count() <= 0:
+        leonardo_page.page.goto("https://app.leonardo.ai/settings/account-management")
+        leonardo_page.page.get_by_label("Close", exact=True).click()
+        leonardo_page.page.get_by_role("button", name="Delete Account").click()
+        name = leonardo_page.page.inner_text("p.chakra-text > span")
+        leonardo_page.page.get_by_role("textbox").fill(name)
+        leonardo_page.page.get_by_role("button", name="Delete My Account").click()
+        leonardo_page.page.get_by_role("button", name="Sign in").wait_for(state='visible', timeout=6000)
+        leonardo_page.page.get_by_role("button", name="Microsoft").click()
+        time.sleep(3)
     leonardo_page.page.get_by_placeholder("myawesomeusername").click()
     leonardo_page.page.get_by_placeholder("myawesomeusername").fill(login_name)
     leonardo_page.page.get_by_role("button", name="advertising").click()
     return leonardo_page
 
-
 def configure_image_settings(leonardo_page):
     leonardo_page.page.get_by_role("dialog", name="Welcome to Leonardo.Ai").locator("span").nth(1).click()
     leonardo_page.page.get_by_role("button", name="Next").click()
-    leonardo_page.page.get_by_label("Close", exact=True).click()
+    if leonardo_page.page.get_by_label("Close", exact=True).is_visible():
+        leonardo_page.page.get_by_label("Close", exact=True).click()
     leonardo_page.page.get_by_role("link", name="Create New Image").click()
     leonardo_page.page.get_by_label("Close").nth(3).click()
     leonardo_page.page.get_by_text("1", exact=True).click()
@@ -65,17 +80,51 @@ def generate_and_download_video(leonardo_page, prompt, file_suffix, image_locato
             "div.css-1uhvlas > div:nth-child(2) > div.css-hoyejk > div > div:nth-child(3) > div > div:nth-child(2) > div:nth-child(1) > div > div > div.css-1lpsa6b > div.css-1sg7dwz> div > button").click()
 
     download = download_info.value
-    download.save_as("/Users/dmitryger/PycharmProjects/leonardoai_automation/" + file_suffix)
+    download.save_as(SAVE_PATH + file_suffix)
 
-
-def test_leonardo(login_page, pages_manager):
+@pytest.mark.parametrize(
+    "prompt ,file_suffix",
+    blood
+)
+def test_leonardo(login_page, pages_manager, prompt, file_suffix):
     login_name = uuid4().hex[:8]
-    leonardo_page = login_and_get_page(login_page, login_name)
+    leonardo_page = login_and_get_page(login_page, login_name, EMAIL_1, PASSWORD_1)
     configure_image_settings(leonardo_page)
-
     # Generate and download videos
-    generate_and_download_video(leonardo_page, "house", "house_video.mp4", image_1_locator)
-    generate_and_download_video(leonardo_page, "mother", "mother_video.mp4", image_2_locator)
-    generate_and_download_video(leonardo_page, "father", "father_video.mp4", image_2_locator)
-    generate_and_download_video(leonardo_page, "car", "father_video.mp4", image_2_locator)
-    generate_and_download_video(leonardo_page, "ship", "father_video.mp4", image_2_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}_{uuid4().hex[:8]}.mp4", image_locator=image_1_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}_{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+
+
+
+@pytest.mark.parametrize(
+    "prompt ,file_suffix",
+    clouns
+)
+def test_leonardo_2(login_page, pages_manager, prompt, file_suffix):
+    login_name = uuid4().hex[:8]
+    leonardo_page = login_and_get_page(login_page, login_name, EMAIL_2, PASSWORD_2)
+    configure_image_settings(leonardo_page)
+    # Generate and download videos
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}_{uuid4().hex[:8]}.mp4", image_locator=image_1_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}_{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+
+
+@pytest.mark.parametrize(
+    "prompt ,file_suffix",
+    killers)
+def test_leonardo_3(login_page, pages_manager, prompt, file_suffix):
+    login_name = uuid4().hex[:8]
+    leonardo_page = login_and_get_page(login_page, login_name, EMAIL_3, PASSWORD_3)
+    configure_image_settings(leonardo_page)
+    # Generate and download videos
+    # generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}_{uuid4().hex[:8]}.mp4", image_locator=image_1_locator)
+    # generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}_{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    # generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    # generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
+    # generate_and_download_video(leonardo_page, prompt=prompt, file_suffix=f"{file_suffix}{uuid4().hex[:8]}.mp4", image_locator=image_2_locator)
