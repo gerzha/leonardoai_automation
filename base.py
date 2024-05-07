@@ -1,6 +1,6 @@
 from playwright.sync_api import BrowserType, Page
 
-from constants import HEADLESS_MODE, OPTIONS
+from constants import OPTIONS
 
 
 class PagesManager:
