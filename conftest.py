@@ -1,6 +1,6 @@
 import pytest
 
-from base import PagesManager, BasePage
+from base import BasePage, PagesManager
 
 
 @pytest.fixture(scope="session")
@@ -13,6 +13,7 @@ def pages_manager(playwright):
 @pytest.fixture()
 def login_page(pages_manager, request):
     app_base_url = "https://app.leonardo.ai"
+
     def _page(name):
         page = pages_manager.new_page()
 
@@ -26,9 +27,11 @@ def login_page(pages_manager, request):
             base_page.page.get_by_role("button", name="Delete Account").click()
             base_page.page.get_by_role("textbox").fill(name)
             base_page.page.get_by_role("button", name="Delete My Account").click()
-            base_page.page.get_by_role("button", name="Sign in").wait_for(state='visible', timeout=6000)
+            base_page.page.get_by_role("button", name="Sign in").wait_for(
+                state="visible", timeout=6000
+            )
+
         request.addfinalizer(lambda: delete_acc(name))
         return base_page
-
 
     return _page
